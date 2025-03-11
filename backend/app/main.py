@@ -1,5 +1,5 @@
 # app/main.py
-from app.services import storage_service
+from app.services.storage_service import storage_service
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 import time
@@ -28,15 +28,29 @@ app.add_middleware(
 )
 
 
+# Evento de inicio para conectar a MongoDB
 @app.on_event("startup")
 async def startup_db_client():
-    await storage_service.connect()
+    try:
+        logger.info("Iniciando conexión a MongoDB...")
+        success = await storage_service.connect()
+        if success:
+            logger.info("Conexión a MongoDB establecida exitosamente")
+        else:
+            logger.warning(
+                "No se pudo conectar a MongoDB, usando almacenamiento alternativo"
+            )
+    except Exception as e:
+        logger.error(f"Error en startup: {str(e)}")
+        # No lanzar excepción para permitir que la app inicie incluso con error de BD
 
 
+# Evento de cierre
 @app.on_event("shutdown")
 async def shutdown_db_client():
     if storage_service.client:
         storage_service.client.close()
+        logger.info("Conexión a MongoDB cerrada")
 
 
 # Añadir middleware para límite de tasa
