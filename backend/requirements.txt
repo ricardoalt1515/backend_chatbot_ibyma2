@@ -6,3 +6,5 @@ pydantic-settings
 python-dotenv
 python-multipart
 uvicorn
+python-jose
+pymongo>=4.3.3
