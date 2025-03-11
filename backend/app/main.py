@@ -15,7 +15,11 @@ app = FastAPI(
 # Configurar CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # En producción, limitar a dominios específicos
+    allow_origins=[
+        "https://ricardoalt1515.github.io/chatbot-widget/",  # dominio de github
+        "http://localhost:3000",  # Para pruebas locales
+        "*",  # Para desarrollo (quitar en produccion)
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
