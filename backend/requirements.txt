@@ -9,3 +9,4 @@ uvicorn
 python-jose
 pymongo>=4.3.3
 motor
+logger
