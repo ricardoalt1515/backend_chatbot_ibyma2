@@ -2,7 +2,8 @@ import logging
 from typing import Dict, List, Optional
 from datetime import datetime
 from bson import ObjectId
-import motor.motor_asyncio
+from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 
 from app.core.config import settings
 from app.models.chat import Conversation, Message
@@ -14,6 +15,37 @@ class StorageService:
         self.client = motor.motor_asyncio.AsyncIOMotorClient(settings.MONGODB_URL)
         self.db = self.client[settings.MONGODB_DB]
         self.conversations = self.db.conversations
+
+    async def connect(self):
+        """
+        Establece conexión con MongoDB y verifica que funcione.
+        """
+        try:
+            # Configurar cliente con timeout para evitar bloqueos largos
+            self.client = AsyncIOMotorClient(
+                settings.MONGODB_URL,
+                serverSelectionTimeoutMS=5000,  # 5 segundos de timeout
+            )
+
+            # Verificar conexión
+            await self.client.admin.command("ping")
+
+            self.db = self.client[settings.MONGODB_DB]
+            self.is_connected = True
+            self.logger.info("Conectado a MongoDB exitosamente")
+
+            return True
+        except (ConnectionFailure, ServerSelectionTimeoutError) as e:
+            self.logger.error(f"No se pudo conectar a MongoDB: {str(e)}")
+            self.is_connected = False
+
+            # Usar almacenamiento en memoria como fallback
+            self.logger.warning("Usando almacenamiento en memoria como alternativa")
+            return False
+        except Exception as e:
+            self.logger.error(f"Error desconocido al conectar a MongoDB: {str(e)}")
+            self.is_connected = False
+            return False
 
     async def save_conversation(self, conversation: Conversation) -> Conversation:
         """

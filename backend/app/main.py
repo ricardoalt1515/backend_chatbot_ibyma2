@@ -3,7 +3,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 import time
 
-from app.api import chat, documents
+from app.api import chat, documents, analytics
 from app.core.config import settings
 
 app = FastAPI(
@@ -51,6 +51,7 @@ async def log_requests(request: Request, call_next):
 # Incluir routers
 app.include_router(chat.router, prefix="/api", tags=["chat"])
 app.include_router(documents.router, prefix="/api", tags=["documents"])
+app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"])
 
 
 @app.get("/health")
