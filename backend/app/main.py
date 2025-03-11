@@ -4,6 +4,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 import time
 import asyncio
+import logging
 import logger
 
 from app.api import chat, documents, analytics
