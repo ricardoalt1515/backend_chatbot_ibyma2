@@ -13,9 +13,10 @@ from app.models.chat import Conversation, Message
 class StorageService:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
-        self.client = motor.motor_asyncio.AsyncIOMotorClient(settings.MONGODB_URL)
-        self.db = self.client[settings.MONGODB_DB]
-        self.conversations = self.db.conversations
+        self.client = None
+        self.db = None
+        self.conversations = None
+        self.is_connected = False
 
     async def connect(self):
         """
@@ -32,6 +33,7 @@ class StorageService:
             await self.client.admin.command("ping")
 
             self.db = self.client[settings.MONGODB_DB]
+            self.conversations = self.db.conversations
             self.is_connected = True
             self.logger.info("Conectado a MongoDB exitosamente")
 
@@ -52,6 +54,13 @@ class StorageService:
         """
         Guarda una nueva conversación en la base de datos.
         """
+        if not self.is_connected:
+            self.logger.warning(
+                "No hay conexión a MongoDB, usando almacenamiento en memoria"
+            )
+            # Aquí podrías implementar un almacenamiento en memoria alternativo
+            return conversation
+
         conversation_dict = conversation.model_dump()
         result = await self.conversations.insert_one(conversation_dict)
         conversation.id = str(result.inserted_id)
@@ -61,6 +70,12 @@ class StorageService:
         """
         Recupera una conversación por su ID.
         """
+        if not self.is_connected:
+            self.logger.warning(
+                "No hay conexión a MongoDB, usando almacenamiento en memoria"
+            )
+            return None
+
         try:
             conversation_data = await self.conversations.find_one(
                 {"_id": ObjectId(conversation_id)}
@@ -79,6 +94,12 @@ class StorageService:
         """
         Añade un mensaje a una conversación existente.
         """
+        if not self.is_connected:
+            self.logger.warning(
+                "No hay conexión a MongoDB, usando almacenamiento en memoria"
+            )
+            return message
+
         message_dict = message.model_dump()
 
         # Actualizar la conversación con el nuevo mensaje
@@ -103,6 +124,12 @@ class StorageService:
         """
         Actualiza el paso actual de una conversación.
         """
+        if not self.is_connected:
+            self.logger.warning(
+                "No hay conexión a MongoDB, usando almacenamiento en memoria"
+            )
+            return None
+
         result = await self.conversations.update_one(
             {"_id": ObjectId(conversation_id)},
             {"$set": {"current_step": step, "updated_at": datetime.now()}},
@@ -119,6 +146,12 @@ class StorageService:
         """
         Actualiza toda la conversación en la base de datos.
         """
+        if not self.is_connected:
+            self.logger.warning(
+                "No hay conexión a MongoDB, usando almacenamiento en memoria"
+            )
+            return conversation
+
         conversation_dict = conversation.model_dump()
 
         # Eliminar el ID para no sobreescribirlo
