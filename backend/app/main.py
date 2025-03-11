@@ -1,7 +1,9 @@
 # app/main.py
+from app.services import storage_service
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 import time
+import asyncio
 
 from app.api import chat, documents, analytics
 from app.core.config import settings
@@ -24,6 +26,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+async def startup_db_client():
+    await storage_service.connect()
+
+
+@app.on_event("shutdown")
+async def shutdown_db_client():
+    if storage_service.client:
+        storage_service.client.close()
 
 
 # Añadir middleware para límite de tasa
